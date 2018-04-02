@@ -77,6 +77,12 @@ def send_response(client_socket):
     if file_data:
         code = 200
         length = len(file_data)
+
+    elif file_path == "Post":
+        code = 200
+        file_data = "Image uploaded!"
+        length = len(file_data)
+
     else:
         code = 404
         file_data = get_file_data(NOT_FOUND_FILE.split("/")[1])  # because it has a "/" in the beginning
@@ -139,7 +145,7 @@ def get_request(client_socket, request):
             try:
                 if file_type in ALL_TYPES and file_path.split("?")[0] == "/image":
                     print "here"
-                    file_path = "/imgs/" + path_back2.split("?")[1].split("=")[1]
+                    file_path = "/uploads/" + path_back2.split("?")[1].split("=")[1]
             except Exception as e:
                 print e
 
@@ -161,7 +167,33 @@ def get_request(client_socket, request):
             return abs_file_path, file_type
 
     elif req_type == "POST":
-        print "Will handle later"
+        try:
+            file_path = info_array[1]
+            length = info_array[5].split("Accept:")[0]
+            print length
+        except IndexError:
+            print "WEIRD INDEX OUT OF BOUNDS"
+            return None, None
+
+        path_back = file_path
+        if file_path.split("?")[0] == "/upload":
+            upload_photo(client_socket, path_back.split("?")[1].split("=")[1], length)
+
+        return "Post", None
+
+
+def upload_photo(client_socket, name, length):
+    print "Uploading photo " + name
+    file_to_upload = open(ROOT_PATH + "/uploads/" + name, 'wb')
+    print "Receiving..."
+
+    length = int(length)
+
+    buffer_thing = client_socket.recv(length)
+    file_to_upload.write(buffer_thing)
+
+    file_to_upload.close()
+    print "Done Receiving"
 
 
 def generate_header(code, file_type, length):
