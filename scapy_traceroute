@@ -1,0 +1,42 @@
+#!/usr/bin/python2
+
+import sys
+from scapy.all import *
+
+host_ip = sys.argv[1]
+
+try:
+    rsp = sr1(IP(dst = host_ip)/ICMP(type = "echo-request"), timeout = 10, verbose = 0)
+    if rsp is not None:
+        host_ip = rsp[IP].src
+    else:
+        sys.exit("Given host is not available at this time or is invalid. Please try again later.")
+except:
+    sys.exit("Given host is not available at this time or is invalid. Please try again later.")
+
+response_packet = IP()
+for i in range(1, 28):
+    if response_packet is not None:
+        if not (response_packet[IP].src == host_ip):
+            print "Hop number: %d" %i
+            request_packet = IP(dst = host_ip, ttl = i)/ICMP(type="echo-request")
+            response_packet = sr1(request_packet, timeout = 5, verbose = 0)
+    
+            if response_packet is not None:
+                print response_packet[IP].src
+            else:
+                print "Hop #%d failed. Trying with a bigger TTL value" % (i)
+                response_packet = IP()
+
+    else:
+        print "Something wierd happaned in hop  #%d" % (i-1)
+        response_packet = IP()
+
+print "Done."
+if response_packet:
+    if response_packet[IP].src == host_ip:
+        print "Success! Huzzah!"
+    else:
+        print "Didn't reach destination. :("
+else:
+    print "Didn't reach destination. :("

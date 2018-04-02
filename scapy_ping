@@ -1,0 +1,25 @@
+#!/usr/bin/python2
+
+from scapy.all import *
+import sys
+
+host = sys.argv[1]
+
+try:
+    rsp = sr1(IP(dst = host)/ICMP(type = "echo-request"), retry = -2, timeout = 10, verbose = 0)
+    if rsp is not None:
+        host = rsp[IP].src
+    else:
+        sys.exit("Given host is not available at this time or is invalid. Please try again later.")
+except Exception as e:
+    print e
+    sys.exit("Given host is not available at this time or is invalid. Please try again later.")
+
+
+message = sys.argv[2]
+
+request_packet =IP(dst= host)/ICMP(type="echo-request")/message
+response_packet = sr1(request_packet)
+
+print "respnse:"
+print response_packet.show()
