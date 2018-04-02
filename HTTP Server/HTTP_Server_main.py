@@ -55,7 +55,9 @@ def initialize_server():
 
 def send_response(client_socket):
     global functions
+
     functions = {"calculate-next": calculate_next, "calculate-area": calculate_area}
+
     request = client_socket.recv(BUFFER_LENGTH)
     file_path, file_type = get_request(client_socket, request)
 
@@ -94,52 +96,72 @@ def get_request(client_socket, request):
     print info_array
 
     try:
-        file_path = info_array[1]
+        req_type = info_array[0]
     except IndexError:
         print "WEIRD INDEX OUT OF BOUNDS"
         return None, None
 
-    print file_path
-    path_backup = file_path
-    path_backup2 = file_path
-    if ((file_path.split("/")[1]).split("?")[0]) in functions:
-        print "is function"
-        func = functions.get(str((path_backup.split("/")[1]).split("?")[0]))
-        file_path = "__DATA__:="
+    if req_type == "GET":
 
-        variables = []
+        try:
+            file_path = info_array[1]
+        except IndexError:
+            print "WEIRD INDEX OUT OF BOUNDS"
+            return None, None
 
-        for variable in (path_backup2.split("/")[1]).split("?")[1].split("&"):
-            variables.append(variable.split("=")[1])
+        print file_path
+        path_backup = file_path
+        path_backup2 = file_path
+        if ((file_path.split("/")[1]).split("?")[0]) in functions:
+            print "is function"
+            func = functions.get(str((path_backup.split("/")[1]).split("?")[0]))
+            file_path = "__DATA__:="
 
-        file_path += str(func(variables))
-        file_path += ".xhr"
+            variables = []
 
-    if file_path == "/":
-        file_path = DEFAULT_FILE
-    try:
-        path_back = file_path
-        file_type = file_path.split(".")[1]
+            for variable in (path_backup2.split("/")[1]).split("?")[1].split("&"):
+                variables.append(variable.split("=")[1])
 
-        if not (file_type in ALL_TYPES):
-            raise IndexError
+            file_path += str(func(variables))
+            file_path += ".xhr"
 
-    except IndexError:
-        print "FILE NAME INVALID"
-        file_type = file_path.split(".")[len(path_back.split(".")) - 1]
+        if file_path == "/":
+            file_path = DEFAULT_FILE
 
-        if not (file_type in ALL_TYPES):
-            print "REALLY IS NOT VALID"
-            file_path = NOT_FOUND_FILE
+        try:
+            path_back = file_path
+            path_back2 = file_path
             file_type = file_path.split(".")[1]
 
-    finally:
-        print "file_type = " + file_type
+            if not (file_type in ALL_TYPES):
+                raise IndexError
 
-        abs_file_path = ROOT_PATH + file_path
-        print "file_path = ", abs_file_path
-        print "\n----------------------------------------------------------------\n"
-        return abs_file_path, file_type
+            try:
+                if file_type in ALL_TYPES and file_path.split("?")[0] == "/image":
+                    print "here"
+                    file_path = "/imgs/" + path_back2.split("?")[1].split("=")[1]
+            except Exception as e:
+                print e
+
+        except IndexError:
+            print "FILE NAME INVALID"
+            file_type = file_path.split(".")[len(path_back.split(".")) - 1]
+
+            if not (file_type in ALL_TYPES):
+                print "REALLY IS NOT VALID"
+                file_path = NOT_FOUND_FILE
+                file_type = file_path.split(".")[1]
+
+        finally:
+            print "file_type = " + file_type
+
+            abs_file_path = ROOT_PATH + file_path
+            print "file_path = ", abs_file_path
+            print "\n----------------------------------------------------------------\n"
+            return abs_file_path, file_type
+
+    elif req_type == "POST":
+        print "Will handle later"
 
 
 def generate_header(code, file_type, length):
